@@ -253,4 +253,4 @@ code { color:#3157b6; }
   height: 220px; overflow: auto; font-family: Consolas, monospace; font-size: 12px;
   white-space: pre-wrap; word-break: break-all; margin: 0; color: #c7d0e0;
 }
-#installLog, #log, #backupLog, #rescueLog { background:#f8faff; color:#32445f; border-color:#dce3ef; }
+#installLog, #log, #rescueLog { background:#f8faff; color:#32445f; border-color:#dce3ef; }

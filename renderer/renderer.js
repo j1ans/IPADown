@@ -108,7 +108,6 @@ $('accountSwitch').addEventListener('change', async () => {
   if (result.ok) {
     STATE.account = result.account;
     setAccountUI(); setRegion(result.account.country);
-    $('backupEmail').value = result.account.appleId;
   } else {
     $('loginAppleId').value = id;
     const saved = await window.api.getAccount(id);
@@ -142,7 +141,6 @@ $('loginBtn').addEventListener('click', async () => {
     hint.className = 'hint ok'; hint.textContent = '登录成功';
     log(`登录成功：${r.account.appleId} dsid=${r.account.dsPersonId} storefront=${r.account.storefront} 地区=${r.account.country}`);
     refreshAccounts(await window.api.listAccounts());
-    $('backupEmail').value = r.account.appleId;
   } else if (r.need2FA) {
     // 需要二次验证：苹果已把验证码推送到受信任设备
     hint.className = 'hint'; hint.textContent = '⚠ ' + r.error;
@@ -163,7 +161,6 @@ $('forgetBtn').addEventListener('click', async () => {
 });
 $('logoutBtn').addEventListener('click', async () => {
   await window.api.logout(); STATE.account = null; setAccountUI(); log('已退出登录');
-  $('backupEmail').value = '';
 });
 
 // ---- Search ----

@@ -25,7 +25,6 @@
     <button class="tab" data-tab="batch" data-i18n="navBatch">批量任务</button>
     <button class="tab" data-tab="install" data-i18n="navLibrary">软件库与安装</button>
     <button class="tab" data-tab="owned" data-i18n="navOwned">已购记录</button>
-    <button class="tab" data-tab="backup" data-i18n="navBackup">IPA 备份</button>
     <button class="tab" data-tab="rescue" data-i18n="navRescue">绝版搜救</button>
     <button class="tab" data-tab="settings" data-i18n="navSettings">设置</button>
   </nav>
@@ -56,7 +55,7 @@
           <button id="forgetBtn" class="btn ghost">删除已存账号</button>
           <span id="loginHint" class="hint"></span>
         </div>
-        <p class="muted small" data-i18n="secureSession">勾选记住账号后，凭据由系统加密并保存在本机；备份与搜救直接复用当前登录。</p>
+        <p class="muted small" data-i18n="secureSession">勾选记住账号后，凭据由系统加密并保存在本机；搜救直接复用当前登录。</p>
         <p class="muted small">本机 GUID(网卡 MAC)：<code id="guidText">-</code></p>
       </div>
       <div class="card note">
@@ -190,19 +189,6 @@
       </div>
     </section>
 
-    <section class="panel" id="tab-backup">
-      <div class="page-heading"><div><p class="eyebrow">ARCHIVE</p><h2 data-i18n="backupTitle">IPA 备份</h2><p class="muted" data-i18n="backupIntro">从本机购买记录批量下载，保存在本机目录。</p></div></div>
-      <div class="card">
-        <div class="grid2">
-          <label data-i18n="purchaseDb">购买记录 SQLite <div class="row nowrap"><input id="backupDb" readonly /><button id="backupDbPick" class="btn" data-i18n="choose">选择</button></div></label>
-          <label data-i18n="accountEmail">当前账号 <input id="backupEmail" type="email" readonly /></label>
-          <label data-i18n="outputDir">输出目录 <input id="backupOutput" readonly /></label>
-        </div>
-        <div class="row"><button id="backupStart" class="btn primary" data-i18n="startBackup">开始备份</button><button id="backupStop" class="btn" disabled data-i18n="stop">停止</button><span id="backupStatus" class="hint"></span></div>
-      </div>
-      <div class="card"><h4 data-i18n="backupProgress">备份进度</h4><div id="backupStats" class="hint"></div><pre id="backupLog" class="log"></pre></div>
-    </section>
-
     <section class="panel" id="tab-rescue">
       <div class="page-heading"><div><p class="eyebrow">PRESERVATION</p><h2 data-i18n="rescueTitle">绝版搜救</h2><p class="muted" data-i18n="rescueIntro">从旧 IPA 或 plist 提取版本标识，尝试找回历史版本。</p></div></div>
       <div class="card">
@@ -303,7 +289,6 @@
   <script src="library-view.js"></script>
   <script src="renderer.js"></script>
   <script src="purchases.js"></script>
-  <script src="backup.js"></script>
   <script src="rescue.js"></script>
 </body>
 </html>
