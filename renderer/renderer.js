@@ -393,20 +393,20 @@ function ilog(msg, kind) { const el = $('installLog'); el.textContent += `[${new
 
 function setDevDot(state) { $('devDot').className = 'dev-dot' + (state ? (' ' + state) : ''); }
 async function loadInstall() {
-  $('devInfo').textContent = '正在检测…'; $('devInfo').className = 'dev-info muted'; setDevDot('');
+  $('devInfo').textContent = window.i18n.t('deviceChecking'); $('devInfo').className = 'dev-info muted'; setDevDot('');
   const ds = await window.api.devStatus();
-  if (!ds.ok) { $('devInfo').textContent = '设备检测失败'; setDevDot('off'); LIB.device = null; }
+  if (!ds.ok) { $('devInfo').textContent = window.i18n.t('deviceFailed'); setDevDot('off'); LIB.device = null; }
   else if (!ds.toolsReady) { $('devInfo').innerHTML = `⚠ ${esc(window.i18n.language === 'en' ? 'Device tools missing' : '未找到设备工具')}<br><span class="small">${esc(ds.tools?.installHint || '')}</span>`; setDevDot('off'); LIB.device = null; }
-  else if (!ds.device) { $('devInfo').innerHTML = '未检测到设备<br><span class="muted small">USB 连接 iPhone/iPad/iPod 并在设备上点「信任」，然后刷新</span>'; setDevDot('off'); LIB.device = null; LIB.installed = []; }
+  else if (!ds.device) { $('devInfo').innerHTML = `${esc(window.i18n.t('deviceMissing'))}<br><span class="muted small">${esc(window.i18n.t('deviceConnectHint'))}</span>`; setDevDot('off'); LIB.device = null; LIB.installed = []; }
   else {
     LIB.device = ds.device; LIB.installed = ds.installed || [];
     setDevDot('on');
     $('devInfo').className = 'dev-info connected';
-    $('devInfo').innerHTML = `<b>${esc(ds.device.name)}</b><br>${esc(ds.device.productType)}<br>iOS <b>${esc(ds.device.productVersion)}</b><br><span class="muted small">设备已装 ${LIB.installed.length} 个应用</span>`;
+    $('devInfo').innerHTML = `<b>${esc(ds.device.name)}</b><br>${esc(ds.device.productType)}<br>iOS <b>${esc(ds.device.productVersion)}</b><br><span class="muted small">${esc(window.i18n.t('deviceInstalledCount', { count: LIB.installed.length }))}</span>`;
   }
   $('libHint').textContent = window.i18n.t('scanning');
   const r = await window.api.libScan({});
-  if (r.ok) { LIB.list = r.list; LIB.dir = r.dir; LIB.indexed = r.indexed; } else { ilog('扫描失败：' + r.error, 'ERR'); }
+  if (r.ok) { LIB.list = r.list; LIB.dir = r.dir; LIB.indexed = r.indexed; } else { ilog(window.i18n.t('scanFailed', { error: r.error }), 'ERR'); }
   renderLib();
 }
 
@@ -418,7 +418,7 @@ function renderLib() {
   const query = $('libSearch').value.trim().toLowerCase();
   const groups = window.libraryView.buildGroups(LIB.list, devVer).filter((g) => {
     if (filter !== 'all' && !g.preferred) return false;
-    if (filter === 'perfect' && !g.preferred?.tag) return false;
+    if (filter === 'perfect' && !window.libraryView.perfectFor(g.preferred, devVer)) return false;
     if ($('libHideInstalled').checked && instMap.has(g.app.bundleId)) return false;
     return !query || [g.app.name, g.app.bundleId, g.app.appId].some((x) => String(x || '').toLowerCase().includes(query));
   });
@@ -432,7 +432,7 @@ function libApp(group, filter, devVer, instMap) {
   const el = document.createElement('article'); el.className = 'library-app';
   const versions = filter === 'perfect' ? [] : group.supported.concat(filter === 'all' ? group.incompatible : []);
   const installed = instMap.get(r.bundleId);
-  const tag = r.tag ? window.i18n.t('perfectVersion') : window.i18n.t('recommendedVersion');
+  const tag = window.libraryView.perfectFor(r, devVer) ? window.i18n.t('perfectVersion') : window.i18n.t('recommendedVersion');
   el.innerHTML = `<div class="library-app-head">
     ${r.icon ? `<img class="library-icon" src="${r.icon}" alt="" />` : '<div class="library-icon noicon">◈</div>'}
     <div class="library-identity"><h3>${esc(r.name)}</h3><p>${esc(r.bundleId || r.appId || r.file)}</p></div>
@@ -466,7 +466,7 @@ $('libSelectCompat').addEventListener('click', () => {
     const on = pick.has(c.dataset.path) && !c.disabled; c.checked = on;
     if (on) n++;
   });
-  $('libHint').textContent = `已智能选中 ${n} 个（每个 App 本机可装的最高版本）`;
+  $('libHint').textContent = window.i18n.t('smartSelected', { count: n });
 });
 $('libInstallSel').addEventListener('click', async () => {
   const files = Array.from(document.querySelectorAll('.libChk')).filter((c) => c.checked).map((c) => c.dataset.path);

@@ -19,6 +19,9 @@
     const match = rec.tag && String(rec.tag.ios).match(/iOS(\d+)/i);
     return match ? Number(match[1]) : 0;
   }
+  function perfectFor(rec, system) {
+    return !!(rec && system && tagSystem(rec) === Number(String(system).split('.')[0]) && compatible(rec, system));
+  }
   function buildGroups(records, system) {
     const apps = new Map();
     const idsByBundle = new Map(records.filter((r) => r.bundleId && r.appId)
@@ -49,7 +52,7 @@
     }
     return output.sort((a, b) => (a.app.name || '').localeCompare(b.app.name || '', 'zh'));
   }
-  const api = { buildGroups, compareVersion, compatible, appKey };
+  const api = { buildGroups, compareVersion, compatible, perfectFor, appKey };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.libraryView = api;
 })(typeof window === 'undefined' ? globalThis : window);

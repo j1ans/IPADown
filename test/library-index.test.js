@@ -7,7 +7,7 @@ const test = require('node:test');
 const AdmZip = require('adm-zip');
 const plist = require('plist');
 const { scanIndexed } = require('../src/library-index');
-const { buildGroups } = require('../renderer/library-view');
+const { buildGroups, perfectFor } = require('../renderer/library-view');
 
 function addIpa(dir, name, version, minimum, appId) {
   const zip = new AdmZip();
@@ -39,8 +39,12 @@ test('indexed scan reuses unchanged IPA metadata and groups by App ID', (t) => {
   assert.equal(groups.length, 1);
   assert.equal(groups[0].preferred.version, '1.0');
   assert.ok(groups[0].preferred.tag);
+  assert.equal(perfectFor(groups[0].preferred, '6.1'), true);
   assert.deepEqual(groups[0].supported.map((r) => r.version), ['2.0']);
   assert.deepEqual(groups[0].incompatible.map((r) => r.version), ['3.0']);
+  const newerDevice = buildGroups(first.list, '8.4');
+  assert.equal(newerDevice[0].preferred.version, '3.0');
+  assert.equal(perfectFor(newerDevice[0].preferred, '8.4'), false);
   fs.unlinkSync(path.join(nested, 'QQ-copy.ipa'));
   assert.equal(scanIndexed(files, db).total, 3);
 });

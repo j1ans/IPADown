@@ -15,6 +15,10 @@
     perfectVersion: 'Perfect match', recommendedVersion: 'Recommended version', installed: 'Installed',
     otherVersions: '{count} other supported versions', backupRequired: 'Sign in and select a purchase database.',
     rescueCount: '{count} apps queued', running: 'Running…', completed: 'Completed',
+    deviceChecking: 'Checking device…', deviceFailed: 'Device check failed', deviceMissing: 'No device detected',
+    deviceConnectHint: 'Connect an iPhone, iPad or iPod by USB, trust this computer, then refresh.',
+    deviceInstalledCount: '{count} installed apps', smartSelected: '{count} compatible apps selected',
+    scanFailed: 'Scan failed: {error}',
   };
   const zh = {
     libraryCount: '{apps} 个应用 · {files} 个 IPA · 本次索引 {indexed} 个', noApps: '没有符合条件的应用',
@@ -22,6 +26,10 @@
     otherVersions: '下方其他可支持版本（{count}）', backupRequired: '请先登录并选择购买记录数据库。',
     rescueCount: '已加入 {count} 个应用',
     scanning: '正在扫描 IPA…', running: '运行中…', completed: '已完成', outputDir: '输出目录',
+    deviceChecking: '正在检测…', deviceFailed: '设备检测失败', deviceMissing: '未检测到设备',
+    deviceConnectHint: 'USB 连接 iPhone/iPad/iPod 并在设备上点「信任」，然后刷新',
+    deviceInstalledCount: '设备已装 {count} 个应用', smartSelected: '已智能选中 {count} 个（每个 App 本机可装的最高版本）',
+    scanFailed: '扫描失败：{error}',
   };
   const staticEnglish = {
     '未登录': 'Not signed in', '退出': 'Sign out', 'Apple ID 登录': 'Sign in with Apple ID', '密码': 'Password',
@@ -44,7 +52,8 @@
     '选择…': 'Choose…', '打开': 'Open', '默认地区': 'Default region',
     '下载前自动尝试购买（免费 App）': 'Automatically get free apps before download',
     '默认免更新模式（softwareVersionExternalIdentifier=999888777）': 'Default no-update mode',
-    '保存设置': 'Save settings',
+    '保存设置': 'Save settings', '任务进度': 'Job progress', '正在检测…': 'Checking device…',
+    '准备中…': 'Preparing…', '本机 GUID(网卡 MAC)：': 'Local GUID (network MAC):',
   };
   const staticChinese = Object.fromEntries(Object.entries(staticEnglish).map(([cn, english]) => [english, cn]));
   const placeholderEnglish = {
