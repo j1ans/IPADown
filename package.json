@@ -1,0 +1,45 @@
+{
+  "name": "ipadown-electron",
+  "version": "1.0.0",
+  "description": "Cross-platform IPA library, downloader and device installer",
+  "main": "src/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "better-sqlite3": "^13.0.3",
+    "bplist-parser": "^0.3.2",
+    "plist": "^3.1.0"
+  },
+  "devDependencies": {
+    "electron": "^31.7.6",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.ipadown.electron",
+    "productName": "ipaDown",
+    "afterPack": "scripts/after-pack.js",
+    "files": [
+      "src/**/*",
+      "renderer/**/*"
+    ],
+    "asarUnpack": ["node_modules/better-sqlite3/**/*"],
+    "win": {
+      "target": "nsis",
+      "extraResources": [{ "from": "tools/libimobiledevice", "to": "tools/libimobiledevice" }]
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities"
+    }
+  }
+}

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline';" />
+  <title>ipaDown · Electron</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">◈</span> ipaDown <span class="tag" data-i18n="workspace">IPA 工作台</span></div>
+    <div class="account" id="accountBox">
+      <select id="accountSwitch" aria-label="Account"><option value="">选择账号</option></select>
+      <select id="languageSelect" aria-label="Language"><option value="zh-CN">中文</option><option value="en">English</option></select>
+      <span id="accountText" class="muted">未登录</span>
+      <button id="logoutBtn" class="btn ghost hidden">退出</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="login" data-i18n="navLogin">账号</button>
+    <button class="tab" data-tab="search" data-i18n="navSearch">发现应用</button>
+    <button class="tab" data-tab="download" data-i18n="navDownload">下载 IPA</button>
+    <button class="tab" data-tab="batch" data-i18n="navBatch">批量任务</button>
+    <button class="tab" data-tab="install" data-i18n="navLibrary">软件库与安装</button>
+    <button class="tab" data-tab="owned" data-i18n="navOwned">已购记录</button>
+    <button class="tab" data-tab="backup" data-i18n="navBackup">IPA 备份</button>
+    <button class="tab" data-tab="rescue" data-i18n="navRescue">绝版搜救</button>
+    <button class="tab" data-tab="settings" data-i18n="navSettings">设置</button>
+  </nav>
+
+  <main>
+    <!-- 登录 -->
+    <section class="panel active" id="tab-login">
+      <div class="card">
+        <h3>Apple ID 登录</h3>
+        <div class="grid2">
+          <label>Apple ID
+            <input id="loginAppleId" list="accountList" placeholder="example@icloud.com" />
+            <datalist id="accountList"></datalist>
+          </label>
+          <label>密码
+            <input id="loginPassword" type="password" placeholder="密码" />
+          </label>
+          <label>二次验证码 (2FA，可空)
+            <input id="loginCode" placeholder="6 位验证码" maxlength="6" />
+          </label>
+          <label>账号地区
+            <select id="loginCountry"></select>
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="loginRemember" checked /> 记住此账号</label>
+        <div class="row">
+          <button id="loginBtn" class="btn primary">登录</button>
+          <button id="forgetBtn" class="btn ghost">删除已存账号</button>
+          <span id="loginHint" class="hint"></span>
+        </div>
+        <p class="muted small" data-i18n="secureSession">勾选记住账号后，凭据由系统加密并保存在本机；备份与搜救直接复用当前登录。</p>
+        <p class="muted small">本机 GUID(网卡 MAC)：<code id="guidText">-</code></p>
+      </div>
+      <div class="card note">
+        <h4>说明</h4>
+        <p class="small">复刻 Apple StoreKit / Configurator 协议：<code>authenticate → buyProduct → volumeStoreDownloadProduct</code>，
+        下载后自动注入 <code>iTunesMetadata.plist</code> 与 <code>sinf</code>，产出可侧载安装的 IPA。
+        若提示需要二次验证，请在密码不变的情况下填入 6 位验证码再次登录。</p>
+      </div>
+    </section>
+
+    <!-- 搜索 -->
+    <section class="panel" id="tab-search">
+      <div class="card">
+        <div class="row">
+          <input id="searchTerm" class="grow" placeholder="关键词 / appid / 包名（如 pixiv、337248563、jp.pxv.pixiv）" />
+          <select id="searchCountry" class="cc"></select>
+          <button id="searchBtn" class="btn primary">搜索</button>
+          <button id="lookupBtn" class="btn">精确查询</button>
+        </div>
+        <div id="searchHint" class="hint"></div>
+      </div>
+      <div id="results" class="results"></div>
+    </section>
+
+    <!-- 下载 -->
+    <section class="panel" id="tab-download">
+      <div class="card">
+        <h3>下载 IPA</h3>
+        <div class="grid2">
+          <label>App ID
+            <input id="dlAppId" placeholder="如 337248563" />
+          </label>
+          <label>版本 ID（留空=最新）
+            <div class="row nowrap">
+              <input id="dlVersionId" placeholder="0 = 最新" class="grow" />
+              <button id="dlVersionsBtn" class="btn">历史版本</button>
+            </div>
+          </label>
+        </div>
+        <select id="dlVersionSelect" class="hidden full"></select>
+        <div class="row">
+          <button id="downloadBtn" class="btn primary">下载</button>
+          <button id="buyBtn" class="btn">仅购买/获取</button>
+          <label class="check"><input type="checkbox" id="dlNoUpdate" /> 免更新模式</label>
+        </div>
+        <div class="progress hidden" id="progressWrap">
+          <div class="bar"><div class="fill" id="progressFill"></div></div>
+          <div class="progress-meta"><span id="progressText">准备中…</span><span id="progressPct"></span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>日志</h4>
+        <pre id="log" class="log"></pre>
+      </div>
+    </section>
+
+    <!-- 批量 -->
+    <section class="panel" id="tab-batch">
+      <div class="card">
+        <h3>批量购买 / 下载</h3>
+        <label>App 列表（每行一个：<code>appid</code> 或 <code>appid,版本id</code>，也可直接粘贴搜索结果的 id）
+          <textarea id="batchList" rows="7" placeholder="337248563&#10;414478124,844035757&#10;333903271"></textarea>
+        </label>
+        <div class="grid2">
+          <label>下载模式（对列表里未写版本号的 App 生效）
+            <select id="batchTarget"></select>
+          </label>
+          <label>地区（跟随账号，可改）
+            <select id="batchCountry"></select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="batchDownloadBtn" class="btn primary">批量下载</button>
+          <button id="batchBuyBtn" class="btn">批量购买/获取</button>
+          <label class="check"><input type="checkbox" id="batchUpdate" /> 用更新协议(SWUPD)</label>
+          <span id="batchHint" class="hint"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>任务进度</h4>
+        <div id="batchRows" class="batch-rows"></div>
+      </div>
+    </section>
+
+    <!-- 安装到设备（App 资源库） -->
+    <section class="panel" id="tab-install">
+      <div class="install-layout">
+        <!-- 左侧栏：设备 + 筛选 + 操作 -->
+        <aside class="install-side">
+          <div class="card">
+            <h4 style="margin:0 0 10px">设备</h4>
+            <div id="devBox" class="devbox">
+              <div class="dev-dot" id="devDot"></div>
+              <div id="devInfo" class="dev-info muted">正在检测…</div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button id="devRefreshBtn" class="btn ghost">刷新设备</button>
+              <button id="libRescanBtn" class="btn ghost">重新扫描</button>
+            </div>
+          </div>
+          <div class="card">
+            <h4 style="margin:0 0 10px">筛选</h4>
+            <label class="check"><input type="radio" name="libFilter" value="compat" checked /> 仅本机可装</label>
+            <label class="check"><input type="radio" name="libFilter" value="perfect" /> 仅完美兼容版</label>
+            <label class="check"><input type="radio" name="libFilter" value="all" /> 全部</label>
+            <hr class="sep" />
+            <label data-i18n="librarySearch">搜索应用 / App ID
+              <input id="libSearch" placeholder="名称、Bundle ID 或 App ID" data-i18n-placeholder="librarySearchPlaceholder" />
+            </label>
+            <label class="check"><input type="checkbox" id="libHideInstalled" /> 隐藏已安装</label>
+          </div>
+          <div class="card">
+            <button id="libSelectCompat" class="btn full" style="margin-bottom:8px">智能全选（每App一个）</button>
+            <button id="libInstallSel" class="btn primary full">安装选中</button>
+            <div id="libHint" class="hint small" style="margin-top:8px"></div>
+          </div>
+        </aside>
+
+        <!-- 右侧：资源库网格 + 日志 -->
+        <div class="install-main">
+          <div class="card">
+            <div id="libGrid"></div>
+          </div>
+          <div class="card">
+            <h4>安装日志</h4>
+            <pre id="installLog" class="log" style="height:140px"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="tab-backup">
+      <div class="page-heading"><div><p class="eyebrow">ARCHIVE</p><h2 data-i18n="backupTitle">IPA 备份</h2><p class="muted" data-i18n="backupIntro">从本机购买记录批量下载，保存在本机目录。</p></div></div>
+      <div class="card">
+        <div class="grid2">
+          <label data-i18n="purchaseDb">购买记录 SQLite <div class="row nowrap"><input id="backupDb" readonly /><button id="backupDbPick" class="btn" data-i18n="choose">选择</button></div></label>
+          <label data-i18n="accountEmail">当前账号 <input id="backupEmail" type="email" readonly /></label>
+          <label data-i18n="outputDir">输出目录 <input id="backupOutput" readonly /></label>
+        </div>
+        <div class="row"><button id="backupStart" class="btn primary" data-i18n="startBackup">开始备份</button><button id="backupStop" class="btn" disabled data-i18n="stop">停止</button><span id="backupStatus" class="hint"></span></div>
+      </div>
+      <div class="card"><h4 data-i18n="backupProgress">备份进度</h4><div id="backupStats" class="hint"></div><pre id="backupLog" class="log"></pre></div>
+    </section>
+
+    <section class="panel" id="tab-rescue">
+      <div class="page-heading"><div><p class="eyebrow">PRESERVATION</p><h2 data-i18n="rescueTitle">绝版搜救</h2><p class="muted" data-i18n="rescueIntro">从旧 IPA 或 plist 提取版本标识，尝试找回历史版本。</p></div></div>
+      <div class="card">
+        <div class="row"><button id="rescueAdd" class="btn primary" data-i18n="addFiles">添加 IPA / plist</button><span id="rescueCount" class="hint"></span></div>
+        <div id="rescueItems" class="rescue-items"></div>
+        <div class="grid2">
+          <label data-i18n="maxVersions">每应用最多版本数（0 = 全部）<input id="rescueMax" type="number" min="0" value="0" /></label>
+        </div>
+        <div class="row"><button id="rescueStart" class="btn primary" disabled data-i18n="startRescue">开始搜救</button><button id="rescueStop" class="btn" disabled data-i18n="stop">停止</button><span id="rescueStatus" class="hint"></span></div>
+      </div>
+      <div class="card"><h4 data-i18n="rescueProgress">搜救进度</h4><div id="rescueStats" class="hint"></div><pre id="rescueLog" class="log"></pre></div>
+    </section>
+
+    <!-- 已购记录 -->
+    <section class="panel" id="tab-owned">
+      <div class="install-layout">
+        <!-- 左侧栏：登录 + 账号 + 操作 -->
+        <aside class="install-side">
+          <div class="card">
+            <h4 style="margin:0 0 10px">登录状态</h4>
+            <div class="devbox"><div class="dev-dot" id="rapDot"></div><div id="rapStatus" class="dev-info muted">未登录</div></div>
+            <div class="row" style="margin-top:10px">
+              <button id="rapLoginBtn" class="btn ghost full">登录 / 切换账号</button>
+            </div>
+          </div>
+          <div class="card">
+            <h4 style="margin:0 0 8px">账号</h4>
+            <div id="rapAccounts" class="rap-accts"></div>
+          </div>
+          <div class="card">
+            <button id="rapCrawlBtn" class="btn primary full" style="margin-bottom:8px" disabled>开始爬取（增量）</button>
+            <button id="rapToggleWv" class="btn full">隐藏登录窗</button>
+          </div>
+        </aside>
+
+        <!-- 右侧：登录 webview + 已购表格 -->
+        <div class="install-main">
+          <div class="card" id="rapWvCard">
+            <div id="rapWvWrap">
+              <webview id="rapWebview" src="https://reportaproblem.apple.com/" partition="persist:rap"
+                style="width:100%; height:380px; border:1px solid var(--border); border-radius:8px; background:#fff"></webview>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row" style="justify-content:space-between">
+              <div class="row" style="margin:0; gap:10px">
+                <input id="ownedSearch" placeholder="筛选：名称 / 开发者 / appid" style="width:240px" />
+                <span id="ownedStat" class="hint"></span>
+              </div>
+              <div class="row" style="margin:0">
+                <button id="ownedSelAll" class="btn ghost">全选 iOS</button>
+                <button id="ownedToBatch" class="btn primary">添加选中到批量下载</button>
+                <button id="ownedExport" class="btn ghost">导出 CSV</button>
+                <button id="ownedClear" class="btn ghost">清空此账号</button>
+              </div>
+            </div>
+            <div class="owned-table-wrap">
+              <table class="owned-table" id="ownedTable">
+                <thead><tr>
+                  <th style="width:30px"><input type="checkbox" id="ownedChkAll" /></th>
+                  <th style="width:42px"></th><th style="width:110px">App ID</th><th>名称</th>
+                  <th>开发者</th><th style="width:70px">类型</th><th style="width:60px">地区</th>
+                  <th style="width:96px">购买日期</th><th style="width:70px">下载</th>
+                </tr></thead>
+                <tbody id="ownedBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="panel" id="tab-settings">
+      <div class="card">
+        <h3>设置</h3>
+        <label>下载目录
+          <div class="row nowrap">
+            <input id="setDir" class="grow" readonly />
+            <button id="chooseDirBtn" class="btn">选择…</button>
+            <button id="openDirBtn" class="btn ghost">打开</button>
+          </div>
+        </label>
+        <label>默认地区
+          <select id="setCountry"></select>
+        </label>
+        <label data-i18n="deviceTools">设备工具目录（可空，自动搜索系统路径）
+          <div class="row nowrap"><input id="setToolsDir" class="grow" readonly /><button id="chooseToolsBtn" class="btn" data-i18n="choose">选择</button></div>
+        </label>
+        <label class="check"><input type="checkbox" id="setAutoBuy" /> 下载前自动尝试购买（免费 App）</label>
+        <label class="check"><input type="checkbox" id="setNoUpdate" /> 默认免更新模式（softwareVersionExternalIdentifier=999888777）</label>
+        <div class="row"><button id="saveSettingsBtn" class="btn primary">保存设置</button><span id="setHint" class="hint"></span></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="library-view.js"></script>
+  <script src="renderer.js"></script>
+  <script src="purchases.js"></script>
+  <script src="backup.js"></script>
+  <script src="rescue.js"></script>
+</body>
+</html>
