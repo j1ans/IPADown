@@ -45,13 +45,59 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: authbridge/go.mod
       - run: npm ci
       - run: npm test
+      - run: npm run build:auth
       - name: Package ${{ matrix.name }}
         run: npx electron-builder --${{ matrix.platform }} ${{ matrix.target }} --${{ matrix.arch }} --publish never
+      - name: Collect installer
+        run: node scripts/collect-release-assets.js ${{ matrix.platform }} ${{ matrix.arch }}
       - uses: actions/upload-artifact@v4
         with:
           name: ipaDown-${{ matrix.name }}
-          path: dist/
+          path: release-assets/
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ipaDown-*
+          path: release-assets
+          merge-multiple: true
+      - name: Verify installers and calculate checksums
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release-assets/*.exe release-assets/*.AppImage release-assets/*.dmg)
+          if [ "${#files[@]}" -ne 4 ]; then
+            printf 'Expected four installers, found %s\n' "${#files[@]}"
+            exit 1
+          fi
+          (cd release-assets && sha256sum *.exe *.AppImage *.dmg > SHA256SUMS.txt)
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            version="$(node -p 'require("./package.json").version')"
+            tag="v${version}-build.${GITHUB_RUN_NUMBER}"
+          fi
+          gh release create "$tag" release-assets/* \
+            --target "$GITHUB_SHA" \
+            --title "ipaDown $tag" \
+            --generate-notes \
+            --latest

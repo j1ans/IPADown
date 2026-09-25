@@ -1,5 +1,7 @@
 # ipadown 通信协议分析 (逆向自 `ipadown_20260123.exe`)
 
+> 本文记录旧版通信格式。Apple 后续要求登录请求使用 SAP 签名；当前应用的登录实现见 `authbridge/main.go` 与 `src/auth-bridge.js`，调用 ipatool v2.6.0。下文的未签名 `authenticate` 字典请求已停用，会收到 HTTP 403。
+
 > 工具用 **易语言** 编写，本质是 Apple App Store / iTunes Store 私有
 > "Configurator / StoreKit" 协议的客户端（与开源 `ipatool` 同源）。
 > 下面是用 IDA Pro 逆向得到的全部通信细节，Go 版按此 1:1 复刻。

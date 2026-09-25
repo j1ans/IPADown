@@ -6,8 +6,11 @@
   "author": "",
   "license": "MIT",
   "scripts": {
+    "build:auth": "node scripts/build-auth-bridge.js",
+    "prestart": "npm run build:auth",
     "start": "electron .",
     "test": "node --test",
+    "predist": "npm run build:auth",
     "dist": "electron-builder"
   },
   "dependencies": {

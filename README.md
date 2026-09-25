@@ -18,7 +18,7 @@ Sign in with an Apple Account in the Account tab. If Apple requests two-factor a
 
 When **Remember this account** is enabled, passwords and sessions are encrypted with Electron `safeStorage` and saved locally. If the operating system does not offer secure storage, credentials are kept for the current run only. No credentials, cookies, purchase databases, or downloaded IPA files belong in the repository.
 
-Apple can change its private store protocol. Authentication, free-license acquisition and downloads require a valid account and may require signing in again. The code does not bypass ownership or device restrictions.
+Authentication uses a local Go bridge built against [ipatool v2.6.0](https://github.com/majd/ipatool/releases/tag/v2.6.0). It fetches Apple's current Store bag and signs the login request with SAP. The app passes the password and optional two-factor code to the bridge over stdin, never as command-line arguments. The returned session is kept in memory or encrypted locally according to the Remember setting. Apple's private store protocol can still change; the code does not bypass ownership or device restrictions.
 
 ## Library and device installation
 
@@ -32,6 +32,8 @@ The **IPA backup** tab reads an existing purchase SQLite database for the curren
 
 ## Build
 
-`npm run dist` builds the current platform. GitHub Actions builds Windows x64, Linux x64, macOS Intel and macOS Apple Silicon packages and uploads them as workflow artifacts. macOS packages are unsigned; users may need to approve them locally. The workflow does not need Apple credentials or repository secrets.
+`npm start` and `npm run dist` build the authentication bridge first; source builds require Go 1.25 or newer. Packaged releases include the bridge and do not require Go. GitHub Actions builds Windows x64, Linux x64, macOS Intel and macOS Apple Silicon packages. After all four builds succeed, it automatically publishes a [GitHub Release](https://github.com/j1ans/IPADown/releases) with the installers and SHA-256 checksums. Each push to `main` gets a unique `v<package-version>-build.<run-number>` tag; a pushed `v*` tag uses that tag for its release. Pull requests build without publishing. macOS packages are unsigned; users may need to approve them locally. The workflow uses GitHub's built-in token and does not need Apple credentials or repository secrets.
+
+The authentication bridge uses ipatool under its [MIT license](third_party/ipatool-LICENSE).
 
 The StoreKit/Configurator protocol notes are in [PROTOCOL.md](PROTOCOL.md). For the device-tool project and its supported platforms, see [libimobiledevice](https://libimobiledevice.org/) and [ideviceinstaller](https://github.com/libimobiledevice/ideviceinstaller).
