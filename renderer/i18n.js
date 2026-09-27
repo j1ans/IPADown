@@ -7,6 +7,7 @@
     librarySearchPlaceholder: 'Name, Bundle ID or App ID',
     secureSession: 'When you remember your account, the OS encrypts its credentials locally. Rescue reuses your current session.',
     outputDir: 'Output folder', deviceTools: 'Device tools folder (optional; searches system paths)',
+    downloadThreads: 'Download threads per IPA (1–16)', concurrentIpas: 'Simultaneous IPA downloads (1–10)',
     choose: 'Choose', stop: 'Stop',
     rescueTitle: 'Discontinued app rescue', rescueIntro: 'Extract version IDs from an old IPA or plist and try to recover earlier releases.',
     addFiles: 'Add IPA / plist', maxVersions: 'Versions per app (0 = all)', startRescue: 'Start rescue',

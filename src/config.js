@@ -17,6 +17,8 @@ class Config {
         country: 'US',
         noUpdate: false,    // 免更新模式
         autoBuy: true,      // 下载前自动尝试购买（免费App）
+        downloadThreads: 8,
+        concurrentIpas: 5,
       },
     };
     this.load();
@@ -34,7 +36,8 @@ class Config {
       const parsed = JSON.parse(raw);
       this.data = Object.assign(this.data, parsed);
       this.data.settings = Object.assign(
-        { downloadDir: this.data.settings.downloadDir, country: 'US', noUpdate: false, autoBuy: true },
+        { downloadDir: this.data.settings.downloadDir, country: 'US', noUpdate: false, autoBuy: true,
+          downloadThreads: 8, concurrentIpas: 5 },
         parsed.settings || {}
       );
     } catch (_) { /* 首次运行 */ }
@@ -65,7 +68,15 @@ class Config {
   }
 
   getSettings() { return this.data.settings; }
-  setSettings(s) { this.data.settings = Object.assign(this.data.settings, s || {}); this.save(); return this.data.settings; }
+  setSettings(s) {
+    this.data.settings = Object.assign(this.data.settings, s || {});
+    for (const [key, max, fallback] of [['downloadThreads', 16, 8], ['concurrentIpas', 10, 5]]) {
+      const value = Number(this.data.settings[key]);
+      this.data.settings[key] = Number.isInteger(value) && value >= 1 && value <= max ? value : fallback;
+    }
+    this.save();
+    return this.data.settings;
+  }
 
   canEncrypt() {
     if (!this.safeStorage?.isEncryptionAvailable()) return false;

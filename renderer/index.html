@@ -275,6 +275,10 @@
         <label>默认地区
           <select id="setCountry"></select>
         </label>
+        <div class="grid2">
+          <label data-i18n="downloadThreads">每个 IPA 的下载线程数（1–16）<input id="setDownloadThreads" type="number" min="1" max="16" value="8" /></label>
+          <label data-i18n="concurrentIpas">同时下载 IPA 数（1–10）<input id="setConcurrentIpas" type="number" min="1" max="10" value="5" /></label>
+        </div>
         <label data-i18n="deviceTools">设备工具目录（可空，自动搜索系统路径）
           <div class="row nowrap"><input id="setToolsDir" class="grow" readonly /><button id="chooseToolsBtn" class="btn" data-i18n="choose">选择</button></div>
         </label>

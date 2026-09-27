@@ -5,6 +5,7 @@ const { machineGUID } = require('./guid');
 const { StoreClient, PRICING_BUY, PRICING_UPDATE } = require('./store');
 const lookup = require('./lookup');
 const ipa = require('./ipa');
+const { mapConcurrent } = require('./concurrent-map');
 const { Config } = require('./config');
 const { countryList } = require('./storefront');
 const iosmap = require('./iosmap');
@@ -490,24 +491,26 @@ ipcMain.handle('store:buy', async (_e, { appId, versionId, update }) => {
 // 核心下载流程（单个/批量共用）：可选自动购买 → volumeStoreDownloadProduct → 注入 sinf/metadata。
 // compatTag: 文件名方括号里的「最佳兼容」标签（如 iOS12），空则不加。
 async function doDownload(appId, versionId, compatTag, onProgress) {
-  if (!store.account) throw new Error('请先登录');
-  const settings = config.getSettings();
+  const activeStore = store;
+  const account = activeStore?.account;
+  if (!account) throw new Error('请先登录');
+  const settings = { ...config.getSettings() };
   let info;
   try {
-    info = await store.download(appId, versionId);
+    info = await activeStore.download(appId, versionId);
   } catch (e1) {
     if (settings.autoBuy && e1.code === 'NOT_OWNED') {
       if (onProgress) onProgress({ stage: 'buy', text: '账号未拥有，尝试自动获取…' });
-      await store.buy(appId, versionId, settings.noUpdate ? PRICING_UPDATE : PRICING_BUY);
-      info = await store.download(appId, versionId);
+      await activeStore.buy(appId, versionId, settings.noUpdate ? PRICING_UPDATE : PRICING_BUY);
+      info = await activeStore.download(appId, versionId);
     } else {
       throw e1;
     }
   }
-  const owned = purchaseDB.data.accounts[String(store.account.dsPersonId)]?.apps?.[String(appId)];
+  const owned = purchaseDB.data.accounts[String(account.dsPersonId)]?.apps?.[String(appId)];
   return ipa.downloadAndPatch(
-    info, store.account, settings.downloadDir,
-    { noUpdate: settings.noUpdate, compatTag, purchaseDate: owned?.pliDate },
+    info, account, settings.downloadDir,
+    { noUpdate: settings.noUpdate, compatTag, purchaseDate: owned?.pliDate, threads: settings.downloadThreads },
     onProgress
   );
 }
@@ -582,26 +585,23 @@ ipcMain.handle('store:batchDownload', async (_e, { items, targetIos }) => {
     }
   }
 
-  const results = [];
-  for (let i = 0; i < work.length; i++) {
-    const w = work[i];
-    const base = { kind: 'download', index: i, total: work.length, appId: w.label };
-    if (w.skip) { // 无兼容版 → 跳过，不下载
-      results.push({ appId: w.label, ok: false, skipped: true, error: w.skip });
-      send('batch:progress', Object.assign({}, base, { status: 'skip', text: w.skip }));
-      continue;
-    }
-    send('batch:progress', Object.assign({}, base, { status: 'doing', text: '下载中…' }));
-    try {
-      const result = await doDownload(w.appId, w.versionId, w.tag, (p) => send('batch:progress',
-        Object.assign({}, base, { status: 'doing', percent: p.percent, received: p.received, total: p.total, speed: p.speed, text: p.text })));
-      results.push({ appId: w.label, ok: true, file: result.fileName });
-      send('batch:progress', Object.assign({}, base, { status: 'ok', file: result.fileName }));
-    } catch (err) {
-      results.push({ appId: w.label, ok: false, error: err.message });
-      send('batch:progress', Object.assign({}, base, { status: 'fail', error: err.message }));
-    }
-  }
+  const results = await mapConcurrent(work, settings.concurrentIpas || 5, async (w, i) => {
+      const base = { kind: 'download', index: i, total: work.length, appId: w.label };
+      if (w.skip) { // 无兼容版 → 跳过，不下载
+        send('batch:progress', Object.assign({}, base, { status: 'skip', text: w.skip }));
+        return { appId: w.label, ok: false, skipped: true, error: w.skip };
+      }
+      send('batch:progress', Object.assign({}, base, { status: 'doing', text: '下载中…' }));
+      try {
+        const result = await doDownload(w.appId, w.versionId, w.tag, (p) => send('batch:progress',
+          Object.assign({}, base, { status: 'doing', percent: p.percent, received: p.received, total: p.total, speed: p.speed, text: p.text })));
+        send('batch:progress', Object.assign({}, base, { status: 'ok', file: result.fileName }));
+        return { appId: w.label, ok: true, file: result.fileName };
+      } catch (err) {
+        send('batch:progress', Object.assign({}, base, { status: 'fail', error: err.message }));
+        return { appId: w.label, ok: false, error: err.message };
+      }
+  });
   return { ok: true, results, total: work.length };
 });
 

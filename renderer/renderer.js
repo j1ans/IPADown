@@ -81,6 +81,8 @@ async function init() {
   });
 
   $('setDir').value = info.settings.downloadDir;
+  $('setDownloadThreads').value = info.settings.downloadThreads || 8;
+  $('setConcurrentIpas').value = info.settings.concurrentIpas || 5;
   $('setToolsDir').value = info.settings.toolDir || '';
   $('setAutoBuy').checked = !!info.settings.autoBuy;
   $('setNoUpdate').checked = !!info.settings.noUpdate;
@@ -366,8 +368,12 @@ $('saveSettingsBtn').addEventListener('click', async () => {
     toolDir: $('setToolsDir').value,
     autoBuy: $('setAutoBuy').checked,
     noUpdate: $('setNoUpdate').checked,
+    downloadThreads: Number($('setDownloadThreads').value),
+    concurrentIpas: Number($('setConcurrentIpas').value),
   });
   STATE.settings = s;
+  $('setDownloadThreads').value = s.downloadThreads;
+  $('setConcurrentIpas').value = s.concurrentIpas;
   $('dlNoUpdate').checked = !!s.noUpdate;
   const h = $('setHint'); h.className = 'hint ok'; h.textContent = '已保存';
   setTimeout(() => (h.textContent = ''), 1500);

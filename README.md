@@ -24,6 +24,8 @@ Authentication uses a local Go bridge built against [ipatool v2.6.0](https://git
 
 The library scans IPA files recursively and caches parsed metadata in an indexed SQLite database. Unchanged files are not unpacked again. Packages are grouped by numeric App ID from `iTunesMetadata.plist`, with Bundle ID as a fallback. Each app displays one preferred compatible IPA, removes duplicate versions, and lists other supported versions underneath. The device's reported iOS version and each IPA's `MinimumOSVersion` determine whether installation is offered.
 
+Downloads use HTTP Range requests when the server supports them. Each IPA uses 8 connections by default, and batch downloads run up to 5 IPAs at once. Both limits are adjustable in Settings; servers without Range support use a single connection.
+
 On Windows, the app uses the bundled `libimobiledevice` tools. On macOS, install `libimobiledevice` and `ideviceinstaller` with Homebrew. On Linux, install your distribution's `libimobiledevice` utilities, `ideviceinstaller` and `usbmuxd`; ensure your user can access the USB device. You can select a custom tools directory in Settings. Modern `ideviceinstaller` subcommands and the older Windows CLI syntax are both supported.
 
 ## Rescue
